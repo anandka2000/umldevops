@@ -27,8 +27,11 @@ podTemplate(yaml: '''
                     cd week9/ex1/
                     curl -LO "https://dl.k8s.io/release/$(curl -L -s https://dl.k8s.io/release/stable.txt)/bin/linux/amd64/kubectl"
                     chmod +x ./kubectl
+                    ./kubectl get pods 
                     ./kubectl apply -f ./hazelcast.yaml
                     ./kubectl apply -f ./calculator.yaml
+                    sleep 30
+                    ./kubectl get pods 
                     cd 
                     '''
                     
