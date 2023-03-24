@@ -69,8 +69,8 @@ podTemplate(yaml: '''
             } // catch
         } //end staging
  
-        stage ('Deploy to production') {
-            container('centos') {
+        stage ('Deploy to cloud-sdk') {
+            container('cloud-sdk') {
                 git 'https://github.com/anandka2000/umldevops.git'
                 stage('start calculator') {
                     sh '''
