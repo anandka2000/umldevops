@@ -23,9 +23,9 @@ podTemplate(yaml: '''
                         - 9999999
                       volumeMounts:
                          - name: shared-storage
-                      mountPath: /mnt
+                           mountPath: /mnt
                          - name: google-cloud-key
-                      mountPath: /var/secrets/google
+                           mountPath: /var/secrets/google
                       env:
                         - name: GOOGLE_APPLICATION_CREDENTIALS
                           value: /var/secrets/google/umls23-1fd328cc3b0f.json
