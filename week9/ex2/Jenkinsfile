@@ -15,15 +15,74 @@ podTemplate(yaml: '''
                         - sleep
                       args:
                          - 99d
+                    - name: cloud-sdk
+                      image: google/cloud-sdk
+                      command:
+                        - sleep
+                      args:
+                        - 9999999
+                      volumeMounts:
+                         - name: shared-storage
+                      mountPath: /mnt
+                         - name: google-cloud-key
+                      mountPath: /var/secrets/google
+                      env:
+                        - name: GOOGLE_APPLICATION_CREDENTIALS
+                          value: /var/secrets/google/umls23-1fd328cc3b0f.json
                 restartPolicy: Never
+                volumes:
+                  - name: shared-storage
+                    persistentVolumeClaim:
+                      claimName: jenkins-pv-claim
+                  - name: google-cloud-key
+                    secret:
+                      secretName: sdk-key
 ''') {
     node(POD_LABEL) {
-        stage('k8s') {
-            git 'https://github.com/anandka2000/umldevops.git'
+        stage ('Staging env test') {
+            try {    
+                stage('Deploy to Staging') {
+                    container('centos') {
+                        git 'https://github.com/anandka2000/umldevops.git'
+                        stage('start calculator') {
+                            sh '''
+                            cd week9/ex2/
+                            curl -LO "https://dl.k8s.io/release/$(curl -L -s https://dl.k8s.io/release/stable.txt)/bin/linux/amd64/kubectl"
+                            chmod +x ./kubectl
+                            ./kubectl get pods 
+                            ./kubectl apply -f ./hazelcast.yaml
+                            ./kubectl apply -f ./calculator.yaml
+                            sleep 30
+                            ./kubectl get pods 
+                            cd 
+                            '''
+                        }
+                    }
+                }
+                stage ('Staging test') {
+                    container('gradle') {
+                        git 'https://github.com/anandka2000/Continuous-Delivery-with-Docker-and-Jenkins-Second-Edition.git'
+                        stage('acceptance test') {
+                            sh '''
+                            cd Chapter09/sample1/
+                            test $(curl calculator-service:8080/sum?a=6\\&b=2 2>/dev/null) -eq 8 && echo 'pass' || echo 'fail'
+                            test $(curl calculator-service:8080/div?a=6\\&b=2 2>/dev/null) -eq 3 && echo 'pass' || echo 'fail'
+                            [ "$(curl calculator-service:8080/div?a=6\\&b=0 2>/dev/null)" = "Division by 0" ] && echo 'pass' || echo 'fail'
+                            '''
+                        }
+                    } 
+                }
+            } catch (Exception E) {
+                error ('staging tests failed')
+            } // catch
+        } //end staging
+ 
+        stage ('Deploy to production') {
             container('centos') {
+                git 'https://github.com/anandka2000/umldevops.git'
                 stage('start calculator') {
                     sh '''
-                    cd week9/ex1/
+                    cd week9/ex2/
                     curl -LO "https://dl.k8s.io/release/$(curl -L -s https://dl.k8s.io/release/stable.txt)/bin/linux/amd64/kubectl"
                     chmod +x ./kubectl
                     ./kubectl get pods 
@@ -33,22 +92,8 @@ podTemplate(yaml: '''
                     ./kubectl get pods 
                     cd 
                     '''
-                    
                 }
             }
-        }
-        stage ('Run test') {
-            git 'https://github.com/anandka2000/Continuous-Delivery-with-Docker-and-Jenkins-Second-Edition.git'
-            container('gradle') {
-                stage('acceptance test') {
-                    sh '''
-                    cd Chapter09/sample1/
-                    test $(curl calculator-service:8080/sum?a=6\\&b=2 2>/dev/null) -eq 8 && echo 'pass' || echo 'fail'
-                    test $(curl calculator-service:8080/div?a=6\\&b=2 2>/dev/null) -eq 3 && echo 'pass' || echo 'fail'
-                    [ "$(curl calculator-service:8080/div?a=6\\&b=0 2>/dev/null)" = "Division by 0" ] && echo 'pass' || echo 'fail'
-                    '''
-                }
-            } 
-        }
-    }
+        } // deploy to prod
+    } // POD Label
 }
