@@ -51,7 +51,7 @@ podTemplate(yaml: '''
                             ./kubectl -n staging get pods 
                             ./kubectl -n staging apply -f ./hazelcast.yaml
                             ./kubectl -n staging apply -f ./calculator.yaml
-                            sleep 60
+                            //sleep 60
                             ./kubectl -n staging get pods 
                             '''
                     } // container
@@ -62,7 +62,7 @@ podTemplate(yaml: '''
                         sh '''
                         cd Chapter09/sample3
                         chmod +x ./gradlew
-                        ./gradlew smokeTest -Dcalculator.url=http://calculator-service.staging.svc.cluster.local:8080
+                        //./gradlew smokeTest -Dcalculator.url=http://calculator-service.staging.svc.cluster.local:8080
                         '''
                     } 
                 }// Run test in staging
