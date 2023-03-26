@@ -49,11 +49,11 @@ podTemplate(yaml: '''
                             cd week9/ex2/
                             curl -LO "https://dl.k8s.io/release/$(curl -L -s https://dl.k8s.io/release/stable.txt)/bin/linux/amd64/kubectl"
                             chmod +x ./kubectl
-                            ./kubectl --context minikube get pods 
-                            ./kubectl --context minikube apply -f ./hazelcast.yaml
-                            ./kubectl --context minikube apply -f ./calculator.yaml
+                            ./kubectl get pods 
+                            ./kubectl apply -f ./hazelcast.yaml
+                            ./kubectl apply -f ./calculator.yaml
                             sleep 30
-                            ./kubectl --context minikube get pods 
+                            ./kubectl get pods 
                             cd 
                             '''
                         }
