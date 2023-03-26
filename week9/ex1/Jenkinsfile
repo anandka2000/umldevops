@@ -41,7 +41,7 @@ podTemplate(yaml: '''
                     ./kubectl get pods 
                     ./kubectl apply -f ./hazelcast.yaml
                     ./kubectl apply -f ./calculator.yaml
-                    sleep 30
+                    sleep 90
                     ./kubectl get pods 
                     cd 
                     '''
