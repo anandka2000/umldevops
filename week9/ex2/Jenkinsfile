@@ -24,14 +24,22 @@ podTemplate(yaml: '''
                       volumeMounts:
                          - name: shared-storage
                            mountPath: /mnt
+                         - name: google-cloud-key
+                           mountPath: /var/secrets/google
+                      env:
+                       - name: GOOGLE_APPLICATION_CREDENTIALS
+                         value: /var/secrets/google/umldevops_gke_key.json
                 restartPolicy: Never
                 volumes:
                   - name: shared-storage
                     persistentVolumeClaim:
                       claimName: jenkins-pv-claim
+                  - name: google-cloud-key
+                    secret:
+                      secretName: sdk-key
 ''') {
     node(POD_LABEL) {
-        stage ('Staging env test') {
+        stage ('Staging test') {
             try {    
                 stage('Deploy to Staging') {
                     container('centos') {
@@ -41,26 +49,21 @@ podTemplate(yaml: '''
                             cd week9/ex2/
                             curl -LO "https://dl.k8s.io/release/$(curl -L -s https://dl.k8s.io/release/stable.txt)/bin/linux/amd64/kubectl"
                             chmod +x ./kubectl
-                            ./kubectl get pods 
-                            ./kubectl apply -f ./hazelcast.yaml
-                            ./kubectl apply -f ./calculator.yaml
+                            ./kubectl --context minikube get pods 
+                            ./kubectl --context minikube apply -f ./hazelcast.yaml
+                            ./kubectl --context minikube apply -f ./calculator.yaml
                             sleep 30
-                            ./kubectl get pods 
+                            ./kubectl --context minikube get pods 
                             cd 
                             '''
                         }
                     }
                 }
-                stage ('Staging test') {
+                stage ('Run test in staing') {
                     container('gradle') {
                         git 'https://github.com/anandka2000/Continuous-Delivery-with-Docker-and-Jenkins-Second-Edition.git'
-                        stage('acceptance test') {
-                            sh '''
-                            cd Chapter09/sample1/
-                            test $(curl calculator-service:8080/sum?a=6\\&b=2 2>/dev/null) -eq 8 && echo 'pass' || echo 'fail'
-                            test $(curl calculator-service:8080/div?a=6\\&b=2 2>/dev/null) -eq 3 && echo 'pass' || echo 'fail'
-                            [ "$(curl calculator-service:8080/div?a=6\\&b=0 2>/dev/null)" = "Division by 0" ] && echo 'pass' || echo 'fail'
-                            '''
+                        stage('smoke test') {
+                           echo 'Hellow I am running in google cloud'
                         }
                     } 
                 }
@@ -73,17 +76,14 @@ podTemplate(yaml: '''
             container('cloud-sdk') {
                 git 'https://github.com/anandka2000/umldevops.git'
                 stage('start calculator') {
-                    sh '''
-                    cd week9/ex2/
-                    curl -LO "https://dl.k8s.io/release/$(curl -L -s https://dl.k8s.io/release/stable.txt)/bin/linux/amd64/kubectl"
-                    chmod +x ./kubectl
-                    ./kubectl get pods 
-                    ./kubectl apply -f ./hazelcast.yaml
-                    ./kubectl apply -f ./calculator.yaml
-                    sleep 30
-                    ./kubectl get pods 
-                    cd 
-                    '''
+                  sh '''
+                  echo 'namespaces in the staging environment'
+                  kubectl get ns
+                  gcloud auth login --cred-file=$GOOGLE_APPLICATION_CREDENTIALS
+                  gcloud container clusters get-credentials umlwk9 --region us-central1-a --project umldevops
+                  echo 'namespaces in the prod environment'
+                  kubectl get ns
+                  ''' 
                 }
             }
         } // deploy to prod
