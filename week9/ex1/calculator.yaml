@@ -21,7 +21,7 @@ spec:
     spec:
       containers:
       - name: calculator
-        image: dlambrig/hello-kaniko:1.1
+        image: dlambrig/hello-kaniko:0.5
         ports:
         - containerPort: 8080
         readinessProbe:
