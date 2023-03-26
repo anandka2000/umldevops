@@ -19,6 +19,17 @@ podTemplate(yaml: '''
 
 ''') {
     node(POD_LABEL) {
+        stage ('Test before upgrade') {
+            container('gradle') {
+                stage('acceptance test') {
+                    sh '''
+                    test $(curl calculator-service:8080/sum?a=6\\&b=2 2>/dev/null) -eq 8 && echo 'pass' || echo 'fail'
+                    test $(curl calculator-service:8080/div?a=6\\&b=2 2>/dev/null) -eq 3 && echo 'pass' || echo 'fail'
+                    [ "$(curl calculator-service:8080/div?a=6\\&b=0 2>/dev/null)" = "Division by 0" ] && echo 'pass' || echo 'fail'
+                    '''
+                }
+            } 
+        }
         stage('k8s') {
             git 'https://github.com/anandka2000/umldevops.git'
             container('centos') {
@@ -38,7 +49,7 @@ podTemplate(yaml: '''
                 }
             }
         }
-        stage ('Run test') {
+        stage ('Run test after upgrade') {
             git 'https://github.com/anandka2000/Continuous-Delivery-with-Docker-and-Jenkins-Second-Edition.git'
             container('gradle') {
                 stage('acceptance test') {
