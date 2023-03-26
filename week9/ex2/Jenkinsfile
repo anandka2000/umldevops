@@ -39,21 +39,21 @@ podTemplate(yaml: '''
                       secretName: sdk-key
 ''') {
     node(POD_LABEL) {
-        stage ('Staging test') {
+        stage ('Staging') {
             try {    
                 stage('Deploy to Staging') {
                     container('centos') {
                         git 'https://github.com/anandka2000/umldevops.git'
-                            sh '''
-                            cd week9/ex2/
-                            curl -LO "https://dl.k8s.io/release/$(curl -L -s https://dl.k8s.io/release/stable.txt)/bin/linux/amd64/kubectl"
-                            chmod +x ./kubectl
-                            ./kubectl -n staging get pods 
-                            ./kubectl -n staging apply -f ./hazelcast.yaml
-                            ./kubectl -n staging apply -f ./calculator.yaml
-                            //sleep 60
-                            ./kubectl -n staging get pods 
-                            '''
+                        sh '''
+                        cd week9/ex2/
+                        curl -LO "https://dl.k8s.io/release/$(curl -L -s https://dl.k8s.io/release/stable.txt)/bin/linux/amd64/kubectl"
+                        chmod +x ./kubectl
+                        ./kubectl -n staging get pods 
+                        ./kubectl -n staging apply -f ./hazelcast.yaml
+                        ./kubectl -n staging apply -f ./calculator.yaml
+                        sleep 60
+                        ./kubectl -n staging get pods 
+                        '''
                     } // container
                 } // Deploy stage
                 stage ('Smoke test') {
@@ -62,7 +62,7 @@ podTemplate(yaml: '''
                         sh '''
                         cd Chapter09/sample3
                         chmod +x ./gradlew
-                        //./gradlew smokeTest -Dcalculator.url=http://calculator-service.staging.svc.cluster.local:8080
+                        /gradlew smokeTest -Dcalculator.url=http://calculator-service.staging.svc.cluster.local:8080
                         '''
                     } 
                 }// Run test in staging
@@ -72,17 +72,22 @@ podTemplate(yaml: '''
             } // catch
         } //end staging
  
-        stage ('Deploy to cloud-sdk') {
+        stage ('Deploy to GKE') {
             container('cloud-sdk') {
                 git 'https://github.com/anandka2000/umldevops.git'
-                  sh '''
-                  echo 'namespaces in the staging environment'
-                  kubectl get ns
-                  gcloud auth login --cred-file=$GOOGLE_APPLICATION_CREDENTIALS
-                  gcloud container clusters get-credentials umlwk9 --region us-central1-a --project umldevops
-                  echo 'namespaces in the prod environment'
-                  kubectl get ns
-                  ''' 
+                sh '''
+                cd week9/ex2/
+                gcloud auth login --cred-file=$GOOGLE_APPLICATION_CREDENTIALS
+                gcloud container clusters get-credentials umlwk9 --region us-central1-a --project umldevops
+                echo 'namespaces in the prod environment'
+                kubectl get ns
+                kubectl create namespace prod
+                kubectl -n prod get pods 
+                kubectl -n prod apply -f ./hazelcast.yaml
+                kubectl -n prod apply -f ./calculator.yaml
+                sleep 60
+                kubectl -n prod get pods  
+                ''' 
             }//container
         } // deploy to prod
     } // POD Label
